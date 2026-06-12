@@ -9,14 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@azure/ai-agents": "^1.1.0",
+    "@azure/ai-projects": "^2.2.0",
+    "@azure/identity": "^4.13.1",
+    "next": "14.2.35",
+    "openai": "^6.42.0",
     "react": "^18",
-    "react-dom": "^18",
-    "next": "14.2.35"
+    "react-dom": "^18"
   },
   "devDependencies": {
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
     "eslint": "^8",
-    "eslint-config-next": "14.2.35"
+    "eslint-config-next": "14.2.35",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1"
   }
 }
