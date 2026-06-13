@@ -1,101 +1,681 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const mountRef = useRef(null);
+  const threeRef = useRef({});
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    field: "",
+    nationality: "",
+    degree: "Masters",
+    gpa: "",
+    financialNeed: false,
+    preferredCountry: "",
+  });
+  const router = useRouter();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Boot Three.js
+  useEffect(() => {
+    async function init() {
+      if (!mountRef.current) return;
+      const THREE = await import("three");
+      const container = mountRef.current;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        container.clientWidth / container.clientHeight,
+        0.1,
+        1000,
+      );
+      camera.position.set(0, 0.5, 5);
+
+      const renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        antialias: true,
+      });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x000000, 0);
+      container.appendChild(renderer.domElement);
+      threeRef.current.renderer = renderer;
+      threeRef.current.camera = camera;
+
+      // Lights
+      scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+      const key = new THREE.DirectionalLight(0xffffff, 0.9);
+      key.position.set(3, 5, 5);
+      scene.add(key);
+      const fill = new THREE.PointLight(0x93c572, 0.7, 20);
+      fill.position.set(-4, 2, 3);
+      scene.add(fill);
+      const rim = new THREE.PointLight(0xffd1dc, 0.5, 20);
+      rim.position.set(0, -2, -3);
+      scene.add(rim);
+
+      // Materials
+      const skin = new THREE.MeshPhongMaterial({
+        color: 0xffdbac,
+        shininess: 30,
+      });
+      const shirt = new THREE.MeshPhongMaterial({
+        color: 0x5a9e32,
+        shininess: 20,
+      });
+      const pants = new THREE.MeshPhongMaterial({ color: 0x2c3e6b });
+      const bag = new THREE.MeshPhongMaterial({
+        color: 0xffd1dc,
+        shininess: 40,
+      });
+      const capM = new THREE.MeshPhongMaterial({
+        color: 0x1a1a2e,
+        shininess: 60,
+      });
+      const gold = new THREE.MeshPhongMaterial({
+        color: 0xffd700,
+        shininess: 100,
+      });
+      const eyeM = new THREE.MeshPhongMaterial({ color: 0x111111 });
+      const shoe = new THREE.MeshPhongMaterial({
+        color: 0x1a1a1a,
+        shininess: 80,
+      });
+
+      const group = new THREE.Group();
+
+      // Head + face
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 32, 32), skin);
+      head.position.y = 1.72;
+      group.add(head);
+
+      [-0.16, 0.16].forEach((x) => {
+        const eyeball = new THREE.Mesh(
+          new THREE.SphereGeometry(0.07, 16, 16),
+          eyeM,
+        );
+        eyeball.position.set(x, 1.77, 0.38);
+        group.add(eyeball);
+      });
+
+      const smileGeo = new THREE.TorusGeometry(0.12, 0.025, 8, 16, Math.PI);
+      const smileMesh = new THREE.Mesh(
+        smileGeo,
+        new THREE.MeshPhongMaterial({ color: 0xbb4422 }),
+      );
+      smileMesh.position.set(0, 1.6, 0.4);
+      smileMesh.rotation.z = Math.PI;
+      group.add(smileMesh);
+
+      // Body
+      const torso = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.38, 0.44, 1.1, 32),
+        shirt,
+      );
+      torso.position.y = 0.86;
+      group.add(torso);
+
+      // Arms
+      const armGeo = new THREE.CylinderGeometry(0.11, 0.09, 0.72, 16);
+      const leftArm = new THREE.Mesh(armGeo, shirt);
+      leftArm.position.set(-0.54, 0.9, 0);
+      leftArm.rotation.z = 0.35;
+      group.add(leftArm);
+
+      const rightArm = new THREE.Mesh(armGeo, shirt);
+      rightArm.position.set(0.54, 0.9, 0);
+      rightArm.rotation.z = -0.35;
+      group.add(rightArm);
+
+      // Hands
+      [-0.8, 0.8].forEach((x) => {
+        const h = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), skin);
+        h.position.set(x, 0.54, 0);
+        group.add(h);
+      });
+
+      // Legs
+      const legGeo = new THREE.CylinderGeometry(0.15, 0.13, 0.85, 16);
+      const lLeg = new THREE.Mesh(legGeo, pants);
+      lLeg.position.set(-0.22, 0.05, 0);
+      group.add(lLeg);
+      const rLeg = new THREE.Mesh(legGeo, pants);
+      rLeg.position.set(0.22, 0.05, 0);
+      group.add(rLeg);
+
+      // Shoes
+      [-0.22, 0.22].forEach((x) => {
+        const s = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.38), shoe);
+        s.position.set(x, -0.35, 0.07);
+        group.add(s);
+      });
+
+      // Backpack
+      const bp = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.72, 0.26), bag);
+      bp.position.set(0, 0.9, -0.42);
+      group.add(bp);
+      const bpPocket = new THREE.Mesh(
+        new THREE.BoxGeometry(0.34, 0.26, 0.08),
+        new THREE.MeshPhongMaterial({ color: 0xffaac0 }),
+      );
+      bpPocket.position.set(0, 0.74, -0.57);
+      group.add(bpPocket);
+
+      // Graduation cap
+      const capBrim = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.26, 0.26, 0.12, 32),
+        capM,
+      );
+      capBrim.position.y = 2.07;
+      group.add(capBrim);
+      const capBoard = new THREE.Mesh(
+        new THREE.BoxGeometry(0.84, 0.065, 0.84),
+        capM,
+      );
+      capBoard.position.y = 2.18;
+      group.add(capBoard);
+
+      // Tassel
+      const tBase = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), gold);
+      tBase.position.set(0.33, 2.18, 0.33);
+      group.add(tBase);
+      const tLine = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.018, 0.018, 0.36, 8),
+        gold,
+      );
+      tLine.position.set(0.33, 2.0, 0.33);
+      group.add(tLine);
+      const tEnd = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), gold);
+      tEnd.position.set(0.33, 1.82, 0.33);
+      group.add(tEnd);
+
+      scene.add(group);
+      group.position.y = 0.4;
+      threeRef.current.group = group;
+      threeRef.current.leftArm = leftArm;
+      threeRef.current.tLine = tLine;
+      threeRef.current.head = head;
+
+      // Animate loop
+      function animate() {
+        threeRef.current.animId = requestAnimationFrame(animate);
+        const t = Date.now() * 0.001;
+        group.position.y = Math.sin(t * 1.3) * 0.1;
+        group.rotation.y = Math.sin(t * 0.7) * 0.18;
+        leftArm.rotation.z = 0.35 + Math.sin(t * 2.5) * 0.22;
+        tLine.rotation.z = Math.sin(t * 2.2) * 0.12;
+        head.rotation.z = Math.sin(t * 1.0) * 0.04;
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // ResizeObserver keeps canvas in sync during CSS transition
+      const ro = new ResizeObserver(() => {
+        if (!mountRef.current || !threeRef.current.renderer) return;
+        const w = mountRef.current.clientWidth;
+        const h = mountRef.current.clientHeight;
+        threeRef.current.renderer.setSize(w, h);
+        threeRef.current.camera.aspect = w / h;
+        threeRef.current.camera.updateProjectionMatrix();
+      });
+      ro.observe(container);
+      threeRef.current.ro = ro;
+    }
+
+    init();
+
+    return () => {
+      if (threeRef.current.animId)
+        cancelAnimationFrame(threeRef.current.animId);
+      if (threeRef.current.ro) threeRef.current.ro.disconnect();
+      if (threeRef.current.renderer) {
+        threeRef.current.renderer.dispose();
+        try {
+          mountRef.current?.removeChild(threeRef.current.renderer.domElement);
+        } catch (_) {}
+      }
+    };
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const studentProfile = {
+      fieldOfStudy: formData.field,
+      nationality: formData.nationality,
+      degreeLevel: formData.degree,
+      gpa: Number(formData.gpa),
+      financialNeed: formData.financialNeed,
+      preferredCountry: formData.preferredCountry,
+    };
+
+    try {
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentProfile,
+        }),
+      });
+
+      const data = await res.json();
+
+      console.log("API response:", data);
+      console.log("Results:", data.results);
+      console.log("Profile:", studentProfile);
+
+      sessionStorage.setItem(
+        "scholarscout_results",
+        JSON.stringify(data.results),
+      );
+
+      sessionStorage.setItem(
+        "scholarscout_profile",
+        JSON.stringify(studentProfile),
+      );
+
+      router.push("/results");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        height: "100vh",
+        overflow: "hidden",
+        background: "linear-gradient(135deg, #eef6e8 0%, #fce8ef 100%)",
+        fontFamily: "'Inter', -apple-system, sans-serif",
+        position: "relative",
+      }}
+    >
+      <style suppressHydrationWarning>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateX(50px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes ctaFadeIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes pulseGlow {
+          0%,100% { box-shadow: 0 8px 30px rgba(61,105,34,0.38); }
+          50%      { box-shadow: 0 8px 55px rgba(61,105,34,0.65), 0 0 0 10px rgba(61,105,34,0.08); }
+        }
+        .cta-btn {
+          background: linear-gradient(135deg, #3d6922, #6ab040);
+          color: #fff; border: none;
+          padding: 1rem 2.6rem; border-radius: 50px;
+          font-size: 1.1rem; font-weight: 700; cursor: pointer;
+          animation: pulseGlow 2.6s ease-in-out infinite;
+          transition: transform 0.18s; font-family: inherit; letter-spacing: 0.02em;
+        }
+        .cta-btn:hover  { transform: translateY(-3px) scale(1.04); }
+        .cta-btn:active { transform: scale(0.97); }
+        .fi { width:100%; height:46px; padding:0 14px; border-radius:10px;
+              border:1.5px solid #cde4b8; background:rgba(255,255,255,0.85);
+              font-size:14px; color:#1a3a0a; outline:none; box-sizing:border-box;
+              transition:border-color .2s,box-shadow .2s,background .2s; font-family:inherit; }
+        .fi:focus { border-color:#3d6922; background:#fff; box-shadow:0 0 0 3px rgba(61,105,34,0.1); }
+        .fl { display:block; font-size:11px; font-weight:700; color:#3d6922;
+              margin-bottom:5px; letter-spacing:.07em; text-transform:uppercase; }
+        .sb { width:100%; height:52px; border-radius:12px; border:none;
+              font-size:1rem; font-weight:700; cursor:pointer; font-family:inherit;
+              transition:transform .18s,box-shadow .18s; letter-spacing:.02em; }
+        .sb:hover:not(:disabled)  { transform:translateY(-2px); box-shadow:0 10px 30px rgba(61,105,34,0.4); }
+        .sb:active:not(:disabled) { transform:scale(0.98); }
+      `}</style>
+
+      {/* Background blobs */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          overflow: "hidden",
+        }}
+      >
+        {[
+          {
+            top: "-15%",
+            left: "-10%",
+            w: "55vw",
+            color: "#7dc456",
+            blur: 90,
+            op: 0.28,
+          },
+          {
+            bottom: "-15%",
+            right: "-10%",
+            w: "60vw",
+            color: "#ffb6c1",
+            blur: 100,
+            op: 0.3,
+          },
+          {
+            top: "30%",
+            right: "15%",
+            w: "28vw",
+            color: "#93c572",
+            blur: 60,
+            op: 0.2,
+          },
+        ].map((b, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              ...b,
+              width: b.w,
+              height: b.w,
+              background: b.color,
+              borderRadius: "50%",
+              filter: `blur(${b.blur}px)`,
+              opacity: b.op,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Three.js canvas — shrinks left on transition */}
+      <div
+        ref={mountRef}
+        style={{
+          width: showForm ? "48%" : "100%",
+          height: "100%",
+          transition: "width 0.88s cubic-bezier(0.4,0,0.2,1)",
+          position: "relative",
+          zIndex: 1,
+          flexShrink: 0,
+        }}
+      />
+
+      {/* Landing CTA — only visible before form */}
+      {!showForm && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "8%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            textAlign: "center",
+            zIndex: 10,
+            pointerEvents: "all",
+            animation: "ctaFadeIn 1s ease-out 0.4s both",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "3.8rem",
+              fontWeight: 900,
+              color: "#1c4008",
+              letterSpacing: "-0.03em",
+              lineHeight: 1,
+              marginBottom: "0.5rem",
+              textShadow: "0 2px 30px rgba(255,255,255,0.55)",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            🎓 ScholarScout AI
+          </div>
+          <p
+            style={{
+              fontSize: "1.15rem",
+              color: "#3d6922",
+              marginBottom: "2.2rem",
+              fontWeight: 500,
+              opacity: 0.88,
+            }}
           >
-            Read our docs
-          </a>
+            AI-powered scholarship discovery, tailored to you
+          </p>
+          <button className="cta-btn" onClick={() => setShowForm(true)}>
+            Find My Scholarship &nbsp;→
+          </button>
+          <div
+            style={{
+              marginTop: "0.9rem",
+              fontSize: "0.78rem",
+              color: "#5a7a4a",
+              opacity: 0.65,
+            }}
+          >
+            Powered by Azure AI Foundry
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {/* Form panel — slides in from right */}
+      <div
+        style={{
+          width: showForm ? "52%" : "0%",
+          height: "100%",
+          overflow: showForm ? "auto" : "hidden",
+          transition: "width 0.88s cubic-bezier(0.4,0,0.2,1)",
+          flexShrink: 0,
+          zIndex: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: showForm ? "2rem 2.5rem 2rem 1.5rem" : "0",
+        }}
+      >
+        {showForm && (
+          <div
+            style={{
+              background: "rgba(255,255,255,0.72)",
+              backdropFilter: "blur(28px)",
+              WebkitBackdropFilter: "blur(28px)",
+              border: "1px solid rgba(255,255,255,0.72)",
+              borderRadius: "28px",
+              padding: "2.5rem",
+              width: "100%",
+              maxWidth: "460px",
+              boxShadow:
+                "0 24px 64px rgba(61,105,34,0.13),0 2px 12px rgba(0,0,0,0.06)",
+              animation:
+                "fadeSlideIn 0.65s cubic-bezier(0.2,0.8,0.2,1) 0.38s both",
+            }}
+          >
+            <div style={{ marginBottom: "1.5rem" }}>
+              <h2
+                style={{
+                  fontSize: "1.75rem",
+                  fontWeight: 800,
+                  color: "#1c4008",
+                  margin: 0,
+                }}
+              >
+                Your Profile
+              </h2>
+              <p
+                style={{
+                  color: "#5a7a4a",
+                  marginTop: "0.4rem",
+                  fontSize: "0.9rem",
+                }}
+              >
+                We will match you with the best scholarships worldwide.
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            >
+              <div>
+                <label className="fl">
+                  Field of Study <span style={{ color: "#e53935" }}>*</span>
+                </label>
+                <input
+                  className="fi"
+                  type="text"
+                  placeholder="e.g. Computer Science"
+                  value={formData.field}
+                  onChange={(e) =>
+                    setFormData({ ...formData, field: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="fl">
+                  Nationality <span style={{ color: "#e53935" }}>*</span>
+                </label>
+                <input
+                  className="fi"
+                  type="text"
+                  placeholder="e.g. Pakistani"
+                  value={formData.nationality}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nationality: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.8rem",
+                }}
+              >
+                <div>
+                  <label className="fl">
+                    Degree <span style={{ color: "#e53935" }}>*</span>
+                  </label>
+                  <select
+                    className="fi"
+                    value={formData.degree}
+                    onChange={(e) =>
+                      setFormData({ ...formData, degree: e.target.value })
+                    }
+                  >
+                    <option>Bachelors</option>
+                    <option>Masters</option>
+                    <option>PhD</option>
+                    <option>Post-Doc</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="fl">
+                    GPA <span style={{ color: "#e53935" }}>*</span>
+                  </label>
+                  <input
+                    className="fi"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="4"
+                    placeholder="0.0 – 4.0"
+                    value={formData.gpa}
+                    onChange={(e) =>
+                      setFormData({ ...formData, gpa: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="fl">
+                  Preferred Country
+                  <span
+                    style={{
+                      fontWeight: 400,
+                      fontSize: "11px",
+                      opacity: 0.6,
+                      textTransform: "none",
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {" "}
+                    (optional)
+                  </span>
+                </label>
+                <input
+                  className="fi"
+                  type="text"
+                  placeholder="e.g. United Kingdom"
+                  value={formData.preferredCountry}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      preferredCountry: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  cursor: "pointer",
+                  padding: "2px 0",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.financialNeed}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      financialNeed: e.target.checked,
+                    })
+                  }
+                  style={{
+                    width: "18px",
+                    height: "18px",
+                    accentColor: "#3d6922",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "14px",
+                    color: "#2a5010",
+                    fontWeight: 500,
+                  }}
+                >
+                  I have financial need
+                </span>
+              </label>
+
+              <button
+                className="sb"
+                type="submit"
+                disabled={loading}
+                style={{
+                  marginTop: "0.4rem",
+                  background: loading
+                    ? "#a8c896"
+                    : "linear-gradient(135deg,#3d6922 0%,#6ab040 100%)",
+                  color: "white",
+                  boxShadow: loading
+                    ? "none"
+                    : "0 6px 24px rgba(61,105,34,0.32)",
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                {loading ? "Finding your matches..." : "Find My Scholarships →"}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
