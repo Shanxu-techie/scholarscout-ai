@@ -17,227 +17,70 @@ export default function Home() {
   });
   const router = useRouter();
 
-  // Boot Three.js
-  useEffect(() => {
-    async function init() {
-      if (!mountRef.current) return;
-      const THREE = await import("three");
-      const container = mountRef.current;
+ useEffect(() => {
+  const mount = mountRef.current;
+  const three = threeRef.current;
 
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-        60,
-        container.clientWidth / container.clientHeight,
-        0.1,
-        1000,
-      );
-      camera.position.set(0, 0.5, 5);
+  async function init() {
+    if (!mount) return;                          
+    const THREE = await import("three");
+    const container = mount;                     
 
-      const renderer = new THREE.WebGLRenderer({
-        alpha: true,
-        antialias: true,
-      });
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setClearColor(0x000000, 0);
-      container.appendChild(renderer.domElement);
-      threeRef.current.renderer = renderer;
-      threeRef.current.camera = camera;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0.5, 5);
 
-      // Lights
-      scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-      const key = new THREE.DirectionalLight(0xffffff, 0.9);
-      key.position.set(3, 5, 5);
-      scene.add(key);
-      const fill = new THREE.PointLight(0x93c572, 0.7, 20);
-      fill.position.set(-4, 2, 3);
-      scene.add(fill);
-      const rim = new THREE.PointLight(0xffd1dc, 0.5, 20);
-      rim.position.set(0, -2, -3);
-      scene.add(rim);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    container.appendChild(renderer.domElement);
 
-      // Materials
-      const skin = new THREE.MeshPhongMaterial({
-        color: 0xffdbac,
-        shininess: 30,
-      });
-      const shirt = new THREE.MeshPhongMaterial({
-        color: 0x5a9e32,
-        shininess: 20,
-      });
-      const pants = new THREE.MeshPhongMaterial({ color: 0x2c3e6b });
-      const bag = new THREE.MeshPhongMaterial({
-        color: 0xffd1dc,
-        shininess: 40,
-      });
-      const capM = new THREE.MeshPhongMaterial({
-        color: 0x1a1a2e,
-        shininess: 60,
-      });
-      const gold = new THREE.MeshPhongMaterial({
-        color: 0xffd700,
-        shininess: 100,
-      });
-      const eyeM = new THREE.MeshPhongMaterial({ color: 0x111111 });
-      const shoe = new THREE.MeshPhongMaterial({
-        color: 0x1a1a1a,
-        shininess: 80,
-      });
+    three.renderer = renderer;
+    three.camera = camera;
 
-      const group = new THREE.Group();
+    three.group = group;
+    three.leftArm = leftArm;
+    three.tLine = tLine;
+    three.head = head;
 
-      // Head + face
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 32, 32), skin);
-      head.position.y = 1.72;
-      group.add(head);
-
-      [-0.16, 0.16].forEach((x) => {
-        const eyeball = new THREE.Mesh(
-          new THREE.SphereGeometry(0.07, 16, 16),
-          eyeM,
-        );
-        eyeball.position.set(x, 1.77, 0.38);
-        group.add(eyeball);
-      });
-
-      const smileGeo = new THREE.TorusGeometry(0.12, 0.025, 8, 16, Math.PI);
-      const smileMesh = new THREE.Mesh(
-        smileGeo,
-        new THREE.MeshPhongMaterial({ color: 0xbb4422 }),
-      );
-      smileMesh.position.set(0, 1.6, 0.4);
-      smileMesh.rotation.z = Math.PI;
-      group.add(smileMesh);
-
-      // Body
-      const torso = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.38, 0.44, 1.1, 32),
-        shirt,
-      );
-      torso.position.y = 0.86;
-      group.add(torso);
-
-      // Arms
-      const armGeo = new THREE.CylinderGeometry(0.11, 0.09, 0.72, 16);
-      const leftArm = new THREE.Mesh(armGeo, shirt);
-      leftArm.position.set(-0.54, 0.9, 0);
-      leftArm.rotation.z = 0.35;
-      group.add(leftArm);
-
-      const rightArm = new THREE.Mesh(armGeo, shirt);
-      rightArm.position.set(0.54, 0.9, 0);
-      rightArm.rotation.z = -0.35;
-      group.add(rightArm);
-
-      // Hands
-      [-0.8, 0.8].forEach((x) => {
-        const h = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), skin);
-        h.position.set(x, 0.54, 0);
-        group.add(h);
-      });
-
-      // Legs
-      const legGeo = new THREE.CylinderGeometry(0.15, 0.13, 0.85, 16);
-      const lLeg = new THREE.Mesh(legGeo, pants);
-      lLeg.position.set(-0.22, 0.05, 0);
-      group.add(lLeg);
-      const rLeg = new THREE.Mesh(legGeo, pants);
-      rLeg.position.set(0.22, 0.05, 0);
-      group.add(rLeg);
-
-      // Shoes
-      [-0.22, 0.22].forEach((x) => {
-        const s = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.38), shoe);
-        s.position.set(x, -0.35, 0.07);
-        group.add(s);
-      });
-
-      // Backpack
-      const bp = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.72, 0.26), bag);
-      bp.position.set(0, 0.9, -0.42);
-      group.add(bp);
-      const bpPocket = new THREE.Mesh(
-        new THREE.BoxGeometry(0.34, 0.26, 0.08),
-        new THREE.MeshPhongMaterial({ color: 0xffaac0 }),
-      );
-      bpPocket.position.set(0, 0.74, -0.57);
-      group.add(bpPocket);
-
-      // Graduation cap
-      const capBrim = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.26, 0.26, 0.12, 32),
-        capM,
-      );
-      capBrim.position.y = 2.07;
-      group.add(capBrim);
-      const capBoard = new THREE.Mesh(
-        new THREE.BoxGeometry(0.84, 0.065, 0.84),
-        capM,
-      );
-      capBoard.position.y = 2.18;
-      group.add(capBoard);
-
-      // Tassel
-      const tBase = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), gold);
-      tBase.position.set(0.33, 2.18, 0.33);
-      group.add(tBase);
-      const tLine = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.018, 0.018, 0.36, 8),
-        gold,
-      );
-      tLine.position.set(0.33, 2.0, 0.33);
-      group.add(tLine);
-      const tEnd = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), gold);
-      tEnd.position.set(0.33, 1.82, 0.33);
-      group.add(tEnd);
-
-      scene.add(group);
-      group.position.y = 0.4;
-      threeRef.current.group = group;
-      threeRef.current.leftArm = leftArm;
-      threeRef.current.tLine = tLine;
-      threeRef.current.head = head;
-
-      // Animate loop
-      function animate() {
-        threeRef.current.animId = requestAnimationFrame(animate);
-        const t = Date.now() * 0.001;
-        group.position.y = Math.sin(t * 1.3) * 0.1;
-        group.rotation.y = Math.sin(t * 0.7) * 0.18;
-        leftArm.rotation.z = 0.35 + Math.sin(t * 2.5) * 0.22;
-        tLine.rotation.z = Math.sin(t * 2.2) * 0.12;
-        head.rotation.z = Math.sin(t * 1.0) * 0.04;
-        renderer.render(scene, camera);
-      }
-      animate();
-
-      // ResizeObserver keeps canvas in sync during CSS transition
-      const ro = new ResizeObserver(() => {
-        if (!mountRef.current || !threeRef.current.renderer) return;
-        const w = mountRef.current.clientWidth;
-        const h = mountRef.current.clientHeight;
-        threeRef.current.renderer.setSize(w, h);
-        threeRef.current.camera.aspect = w / h;
-        threeRef.current.camera.updateProjectionMatrix();
-      });
-      ro.observe(container);
-      threeRef.current.ro = ro;
+    function animate() {
+      three.animId = requestAnimationFrame(animate);   
+      const t = Date.now() * 0.001;
+      group.position.y = Math.sin(t * 1.3) * 0.1;
+      group.rotation.y = Math.sin(t * 0.7) * 0.18;
+      leftArm.rotation.z = 0.35 + Math.sin(t * 2.5) * 0.22;
+      tLine.rotation.z = Math.sin(t * 2.2) * 0.12;
+      head.rotation.z = Math.sin(t * 1.0) * 0.04;
+      renderer.render(scene, camera);
     }
+    animate();
 
-    init();
+    const ro = new ResizeObserver(() => {
+      if (!mount || !three.renderer) return;          
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      three.renderer.setSize(w, h);
+      three.camera.aspect = w / h;
+      three.camera.updateProjectionMatrix();
+    });
+    ro.observe(container);
+    three.ro = ro;
+  }
 
-    return () => {
-      if (threeRef.current.animId)
-        cancelAnimationFrame(threeRef.current.animId);
-      if (threeRef.current.ro) threeRef.current.ro.disconnect();
-      if (threeRef.current.renderer) {
-        threeRef.current.renderer.dispose();
-        try {
-          mountRef.current?.removeChild(threeRef.current.renderer.domElement);
-        } catch (_) {}
-      }
-    };
-  }, []);
+  init();
+
+  return () => {
+    if (three.animId) cancelAnimationFrame(three.animId);
+    if (three.ro) three.ro.disconnect();
+    if (three.renderer) {
+      three.renderer.dispose();
+      try {
+        mount?.removeChild(three.renderer.domElement);
+      } catch (_) {}
+    }
+  };
+}, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
