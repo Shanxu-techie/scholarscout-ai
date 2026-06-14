@@ -7,6 +7,7 @@ export default function Home() {
   const threeRef = useRef({});
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     field: "",
     nationality: "",
@@ -239,6 +240,7 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null); 
 
     const studentProfile = {
       fieldOfStudy: formData.field,
@@ -277,6 +279,7 @@ export default function Home() {
       router.push("/results");
     } catch (err) {
       console.error(err);
+      setError("Something went wrong — please try again.");  
     } finally {
       setLoading(false);
     }
@@ -293,6 +296,7 @@ export default function Home() {
         background: "linear-gradient(135deg, #eef6e8 0%, #fce8ef 100%)",
         fontFamily: "'Inter', -apple-system, sans-serif",
         position: "relative",
+        alignItems: "center",
       }}
     >
       <style suppressHydrationWarning>{`
@@ -316,7 +320,7 @@ export default function Home() {
   min-width: 320px;
   max-width: 460px;
   margin: 0 auto;
-  padding: 32px 40px 32px 24px;
+  padding: 32px 24px 32px 40px;
   box-sizing: border-box;
   background: transparent;
   text-align: center;
@@ -381,6 +385,32 @@ export default function Home() {
 
   min-width: 0;
   box-sizing: border-box;
+}
+  .form-panel {
+  width: 0;
+  max-width: 0;
+  height: 100%;
+  overflow: hidden;
+  transition: width 0.88s cubic-bezier(0.4,0,0.2,1), max-width 0.88s cubic-bezier(0.4,0,0.2,1);
+  flex-shrink: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0;
+}
+.form-panel.open {
+  width: 100%;
+  max-width: 700px;
+  overflow: auto;
+  padding: 2rem 2.5rem 2rem 1.5rem;
+}
+@media (min-width: 768px) {
+  .form-panel.open {
+    flex: 1;
+    max-width: 50%;
+    width: auto;
+  }
 }
         .sb:hover:not(:disabled)  { transform:translateY(-2px); box-shadow:0 10px 30px rgba(61,105,34,0.4); }
         .sb:active:not(:disabled) { transform:scale(0.98); }
@@ -485,21 +515,7 @@ export default function Home() {
       </div>
 
       {/* Form panel — slides in from right */}
-      <div
-        style={{
-          width: showForm ? "100%" : "0",
-          maxWidth: showForm ? "700px" : "0",
-          height: "100%",
-          overflow: showForm ? "auto" : "hidden",
-          transition: "width 0.88s cubic-bezier(0.4,0,0.2,1)",
-          flexShrink: 0,
-          zIndex: 2,
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          padding: showForm ? "2rem 2.5rem 2rem 1.5rem" : "0",
-        }}
-      >
+      <div className={`form-panel${showForm ? " open" : ""}`}>
         {showForm && (
           <div
             style={{
